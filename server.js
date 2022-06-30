@@ -13,34 +13,36 @@ const io = new Server({
 
 const initialState = [];
 
-const rooms = [{ name: "Default room", state: initialState }];
+const rooms = ["test room 1", "test room 2"];
+const users = [];
 
 io.on("connection", (socket) => {
   console.log(`Socket with id ${socket.id} is now connected.`);
   // const id = socket.handshake.query.id;
   socket.join("default");
 
+  // Create user
+  socket.on("create_user", (user) => {
+    users.push(user);
+    console.log(user);
+    socket.emit("user_created", user);
+  });
+
   // Create rooms
   socket.on("create_room", (room) => {
+    // room är en sträng
     rooms.push(room);
     console.log(rooms);
 
-    io.emit();
+    socket.emit("room_created", room);
   });
 
   // Join room
   socket.on("join_room", (room) => {
-    const checkedInRooms = Array.from(socket.rooms);
-    console.log(`${socket.id} has joined ${room}.`);
-    const presentRoom = checkedInRooms[1];
-
-    io.to(presentRoom).emit("joinded_room", socket.id);
-
-    socket.leave();
-
+    // room är en sträng
     socket.join(room);
-    io.to(room).emit("updated_state", rooms.default);
-    console.log(`${socket.id} joined room: ${room}`);
+
+    socket.emit("room_joined", room);
 
     console.log(socket.rooms);
   });
