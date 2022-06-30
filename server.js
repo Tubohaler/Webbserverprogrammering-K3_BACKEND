@@ -8,8 +8,8 @@ const io = new Server({
 });
 
 // //Knex
-// const knexConfig = require("./knexfile");
-// const knex = require("knex")(knexConfig[development]);
+const knexConfig = require("./data/knexfile");
+const knex = require("./data/database");
 
 const initialState = [];
 
@@ -42,7 +42,7 @@ io.on("connection", (socket) => {
     // room är en sträng
     socket.join(room);
 
-    socket.emit("room_joined", room);
+    socket.to(room).emit("room_joined");
 
     console.log(socket.rooms);
   });
@@ -55,6 +55,9 @@ io.on("connection", (socket) => {
 
     console.log(socket.rooms);
   });
+
+  //Erase room -- EJ KLAR
+  socket.on("delete_room", (data) => {});
 
   io.emit("new_user", "A new user has joined");
 
