@@ -1,4 +1,46 @@
 const { Server } = require("socket.io");
+const { createServer } = require("http");
+
+const { Socket } = require("dgram");
+const { join } = require("path");
+
+async function getAllRooms() {
+  const result = await knex("room").select();
+  return result;
+}
+
+async function getSingleRooms(id) {
+  const foundRoom = await knex("rooms").select().where({ id: id });
+  return foundRoom;
+}
+
+async function createRoom(room) {
+  const id = await knex("room").insert(room);
+  return id;
+}
+
+async function getAllMessages(room) {
+  const result = await knex("messages").select().where({ room: room });
+  return result;
+}
+
+async function addMessage({ user, room, message }) {
+  if (message) {
+    const id = await knex("messages").insert({ user, room, message });
+    return id;
+  } else {
+    return null;
+  }
+}
+
+async function getMessage(id) {
+  const newMessage = await knex("messages").select().where({ id: id });
+  return newMessage;
+}
+
+async function deleteRoom(room) {
+  await knex("room").where({ room: room }).del();
+}
 
 const io = new Server({
   cors: {
@@ -8,8 +50,7 @@ const io = new Server({
 });
 
 // //Knex
-const knexConfig = require("./data/knexfile");
-const knex = require("./data/database");
+const knex = require("./data/knexfile");
 
 const initialState = [];
 
