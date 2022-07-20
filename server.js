@@ -2,6 +2,10 @@ const express = require("express");
 const cors = require("cors");
 const app = express();
 
+// //Knex
+const knex = require("./data/database");
+const { argv } = require("process");
+
 const fs = require("fs");
 
 const { Server } = require("socket.io");
@@ -19,8 +23,10 @@ app.use(cors());
 //OK
 async function getAllRooms() {
   const result = await knex("rooms").select();
+  console.log(result);
   return result;
 }
+
 //OK
 async function getSingleRooms(id) {
   const foundRoom = await knex("rooms").select().where({ id: id });
@@ -60,16 +66,13 @@ async function deleteRoom(room) {
     .del();
 }
 
-// //Knex
-const knex = require("./data/knexfile");
-const { argv } = require("process");
-
 const initialState = [];
 
 const rooms = ["test room 1", "test room 2"];
 const users = [];
 
 io.on("connection", (socket) => {
+  // const allRooms = getAllRooms();
   console.log(`Socket with id ${socket.id} is now connected.`);
   // const id = socket.handshake.query.id;
   socket.join("default");

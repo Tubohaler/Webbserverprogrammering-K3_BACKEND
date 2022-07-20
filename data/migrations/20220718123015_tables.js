@@ -12,13 +12,13 @@ exports.up = async function (knex) {
     // Skapar en kolumn "id" som "auto incrementar" id't
     table.increments("id");
     // Skapar en kolumn "name" som inte kan vara null
-    table.integer("user_id").notNullable();
+    table.string("user_id").notNullable();
     // Skapar en kolumn "email" som måste vara unique och inte null
     table.string("message").notNullable();
 
-    table.integer("room_id").notNullable();
+    table.string("room_id").notNullable();
     // En kolumn som skapar en timestamp när en användare skapas
-    table.timestamps();
+    table.timestamps(true, true);
   });
 
   await knex.schema.createTable("rooms", (table) => {
@@ -27,7 +27,6 @@ exports.up = async function (knex) {
     // Skapar en kolumn "name" som inte kan vara null
     table.string("name").unique().notNullable();
     // Skapar en kolumn "email" som måste vara unique och inte null
-    table.timestamps();
   });
 };
 
@@ -36,8 +35,10 @@ exports.up = async function (knex) {
  * @returns { Promise<void> }
  */
 exports.down = function (knex) {
-  return knex.schema
-    .dropTableIfExists("users")
-    .dropTableIfExists("messages")
-    .dropTableIfExists("rooms");
+  return (
+    knex.schema
+      // .dropTableIfExists("users")
+      // .dropTableIfExists("messages")
+      .dropTableIfExists("rooms")
+  );
 };

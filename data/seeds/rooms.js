@@ -6,8 +6,8 @@ exports.seed = async function (knex) {
   // Deletes ALL existing entries
   await knex("rooms").del();
   await knex("rooms").insert([
-    { room: "default" },
-    { room: "mancave" },
-    { room: "castle" },
+    { name: "Cukel" },
+    { name: "Masten" },
+    { name: "Såbb" },
   ]);
 };
