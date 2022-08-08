@@ -20,36 +20,34 @@ const io = new Server(server, {
 });
 
 app.use(cors());
+
 //OK
 async function getAllRooms() {
   const result = await knex("rooms").select();
-  console.log(result);
   return result;
 }
 
-//OK
-async function getSingleRooms(id) {
+async function getSingleRoom(id) {
   const foundRoom = await knex("rooms").select().where({ id: id });
+  // console.log(foundRoom);
   return foundRoom;
 }
-//OK
+
 async function createRoom(room) {
   const id = await knex("rooms").insert(users, rooms, messages);
   return id;
 }
-//Osäker
+//OK
 async function getAllMessages(room) {
-  const result = await knex("messages").select().where({ room: room });
+  // console.log(room);
+  const result = await knex("messages").select().where({ room_id: room });
+  // console.log(result);
   return result;
 }
-//OK
-async function addMessage({ users, rooms, messages }) {
-  if (message) {
-    const id = await knex("messages").insert({ user_id, room_id, message });
-    return id;
-  } else {
-    return null;
-  }
+// ska ta meddelande frontend, ska lägga in den i DB, därefter hämta meddelandena o rendera ut dem igen. 1) kolla var namn 2) consolelogga allt
+async function addMessage({ user_id, room_id, message }) {
+  const id = await knex("messages").insert({ user_id, room_id, message });
+  return id;
 }
 // Jag har id, user_id, room_id. Vilket ska jag använda?
 async function getMessage(id) {
@@ -80,7 +78,7 @@ io.on("connection", (socket) => {
   //Middleware
   socket.use(([event, ...args], next) => {
     if (event === "message") {
-      console.log(event, args);
+      // console.log(event, args);
 
       // data som ska skrivas till writeFile("data_log.txt")
       // username, message, room & timestamp.
@@ -105,8 +103,9 @@ io.on("connection", (socket) => {
 
   // Create user
   socket.on("create_user", (user) => {
+    socket.user = user;
     users.push(user);
-    console.log(user);
+    // console.log(user);
     socket.emit("user_created", user);
   });
 
@@ -115,17 +114,21 @@ io.on("connection", (socket) => {
     // room är en sträng
     // hämta alla rum, sen filter som filterar mot det rummet du joina, sen if sats, matchar det skrivna rummet med ett rum som redans finns,returnera då fel. Annars skapa rum.
     rooms.push(room);
-    console.log(rooms);
+    // console.log(rooms);
 
     socket.emit("room_created", room);
   });
 
   // Join room
-  socket.on("join_room", (room) => {
-    // room är en sträng
+  socket.on("join_room", async (room) => {
+    socket.roomName = room;
+    const allMessages = await getAllMessages(room);
+    // console.log("room", room);
+    // console.log(allMessages);
     socket.join(room);
 
-    socket.to(room).emit("room_joined");
+    // socket.to(room).emit("room_joined");
+    socket.emit("join_room", allMessages);
 
     console.log(socket.rooms, "This is socket rooms");
   });
@@ -149,16 +152,17 @@ io.on("connection", (socket) => {
 
   io.emit("new_user", "A new user has joined");
 
+  //OK
   // Message
-  socket.on("send-message", (data) => {
+  socket.on("send_message", (data) => {
     console.log(`${socket.id} has sent a message ${data}.`);
+    const user_id = socket.user;
+    const room_id = socket.roomName;
 
-    socket.broadcast.emit("send-message", data);
-  });
+    addMessage({ user_id, room_id, message: data });
+    getAllRooms(room_id);
 
-  //Direkt meddelande
-  socket.on("private_message", (data) => {
-    socket.to(data.to).emit("send-message", data.message);
+    socket.broadcast.emit("send_message", data);
   });
 
   socket.on("disconnect", (reason) =>
