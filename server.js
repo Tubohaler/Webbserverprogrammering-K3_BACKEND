@@ -37,6 +37,7 @@ async function createRoom(room) {
   const id = await knex("rooms").insert(users, rooms, messages);
   return id;
 }
+
 //OK
 async function getAllMessages(room) {
   // console.log(room);
@@ -44,29 +45,32 @@ async function getAllMessages(room) {
   // console.log(result);
   return result;
 }
-// ska ta meddelande frontend, ska lägga in den i DB, därefter hämta meddelandena o rendera ut dem igen. 1) kolla var namn 2) consolelogga allt
+
 async function addMessage({ user_id, room_id, message }) {
   const id = await knex("messages").insert({ user_id, room_id, message });
   return id;
 }
+
+async function addRooms(room_name) {
+  const rooms = await knex("rooms").insert({ name: room_name });
+  return rooms;
+}
+
 // Jag har id, user_id, room_id. Vilket ska jag använda?
 async function getMessage(id) {
   const newMessage = await knex("messages").select().where({ id: id });
   return newMessage;
 }
 
-async function deleteRoom(room) {
-  await knex("rooms").where({ room: room }).del();
-  await knex
-    .select("message", "rooms")
-    .from("messages")
-    .where({ room: room })
-    .del();
+async function deleteRoom(room_name) {
+  await knex("rooms").where("name", room_name).del();
+
+  await knex("messages").where("room_id", room_name).del();
 }
 
 const initialState = [];
 
-const rooms = ["test room 1", "test room 2"];
+// const rooms = ["test room 1", "test room 2"];
 const users = [];
 
 io.on("connection", (socket) => {
@@ -110,13 +114,17 @@ io.on("connection", (socket) => {
   });
 
   // Create rooms
-  socket.on("create_room", (room) => {
+  socket.on("create_room", async (room) => {
     // room är en sträng
     // hämta alla rum, sen filter som filterar mot det rummet du joina, sen if sats, matchar det skrivna rummet med ett rum som redans finns,returnera då fel. Annars skapa rum.
-    rooms.push(room);
-    // console.log(rooms);
+    // rooms.push(room);
 
-    socket.emit("room_created", room);
+    const rooms = await getAllRooms();
+    const index = rooms.findIndex((ExistingRoom) => room === ExistingRoom.name);
+    if (index === -1) {
+      addRooms(room);
+      socket.emit("room_created", room);
+    }
   });
 
   // Join room
@@ -155,14 +163,15 @@ io.on("connection", (socket) => {
   //OK
   // Message
   socket.on("send_message", (data) => {
-    console.log(`${socket.id} has sent a message ${data}.`);
     const user_id = socket.user;
     const room_id = socket.roomName;
 
-    addMessage({ user_id, room_id, message: data });
-    getAllRooms(room_id);
+    if (data.length !== 0) {
+      addMessage({ user_id, room_id, message: data });
 
-    socket.broadcast.emit("send_message", data);
+      socket.broadcast.emit("send_message", data);
+      console.log(`${socket.id} has sent a message ${data}.`);
+    }
   });
 
   socket.on("disconnect", (reason) =>
