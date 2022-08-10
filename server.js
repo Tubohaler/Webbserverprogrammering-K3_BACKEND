@@ -21,7 +21,6 @@ const io = new Server(server, {
 
 app.use(cors());
 
-//OK
 async function getAllRooms() {
   const result = await knex("rooms").select();
   return result;
@@ -29,7 +28,6 @@ async function getAllRooms() {
 
 async function getSingleRoom(id) {
   const foundRoom = await knex("rooms").select().where({ id: id });
-  // console.log(foundRoom);
   return foundRoom;
 }
 
@@ -38,11 +36,8 @@ async function createRoom(room) {
   return id;
 }
 
-//OK
 async function getAllMessages(room) {
-  // console.log(room);
   const result = await knex("messages").select().where({ room_id: room });
-  // console.log(result);
   return result;
 }
 
@@ -56,7 +51,6 @@ async function addRooms(room_name) {
   return rooms;
 }
 
-// Jag har id, user_id, room_id. Vilket ska jag använda?
 async function getMessage(id) {
   const newMessage = await knex("messages").select().where({ id: id });
   return newMessage;
@@ -70,22 +64,15 @@ async function deleteRoom(room_name) {
 
 const initialState = [];
 
-// const rooms = ["test room 1", "test room 2"];
 const users = [];
 
 io.on("connection", (socket) => {
-  // const allRooms = getAllRooms();
   console.log(`Socket with id ${socket.id} is now connected.`);
-  // const id = socket.handshake.query.id;
   socket.join("default");
 
   //Middleware
   socket.use(([event, ...args], next) => {
     if (event === "message") {
-      // console.log(event, args);
-
-      // data som ska skrivas till writeFile("data_log.txt")
-      // username, message, room & timestamp.
       const data = JSON.stringify({
         user: user,
         message: args[0],
@@ -93,7 +80,6 @@ io.on("connection", (socket) => {
         timestamp: Date(),
       });
 
-      // fs.WriteFile("text-fil", objektet[data], flag: a för att inte skriva över tidigare loggar som skickas, sist med error-meddelanden.)
       fs.writeFile("data_log.txt", data, { flag: "a" }, (error) => {
         if (error) {
           console.log(error);
@@ -109,16 +95,11 @@ io.on("connection", (socket) => {
   socket.on("create_user", (user) => {
     socket.user = user;
     users.push(user);
-    // console.log(user);
     socket.emit("user_created", user);
   });
 
   // Create rooms
   socket.on("create_room", async (room) => {
-    // room är en sträng
-    // hämta alla rum, sen filter som filterar mot det rummet du joina, sen if sats, matchar det skrivna rummet med ett rum som redans finns,returnera då fel. Annars skapa rum.
-    // rooms.push(room);
-
     const rooms = await getAllRooms();
     const index = rooms.findIndex((ExistingRoom) => room === ExistingRoom.name);
     if (index === -1) {
@@ -131,11 +112,9 @@ io.on("connection", (socket) => {
   socket.on("join_room", async (room) => {
     socket.roomName = room;
     const allMessages = await getAllMessages(room);
-    // console.log("room", room);
-    // console.log(allMessages);
+
     socket.join(room);
 
-    // socket.to(room).emit("room_joined");
     socket.emit("join_room", allMessages);
 
     console.log(socket.rooms, "This is socket rooms");
@@ -146,11 +125,9 @@ io.on("connection", (socket) => {
     console.log(`${socket.id} has left room ${data}.`);
 
     socket.leave(data);
-
-    console.log(socket.rooms);
   });
 
-  //Delete room -- EJ KLAR
+  //Delete room
   socket.on("delete_room", async (room) => {
     await deleteRoom(room);
     const newRooms = await getAllRooms();
@@ -160,7 +137,6 @@ io.on("connection", (socket) => {
 
   io.emit("new_user", "A new user has joined");
 
-  //OK
   // Message
   socket.on("send_message", (data) => {
     const user_id = socket.user;
